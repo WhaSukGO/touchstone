@@ -10,18 +10,24 @@ from __future__ import annotations
 
 import sys
 
-from .factory import build_cifar_harness
+from .factory import build_cifar_agent_harness, build_cifar_harness
 from .models import Status
-from .plugins.cifar import seed_experiment
+from .plugins.cifar import calibration_records, seed_experiment
 
 
 def main(argv: list[str]) -> int:
     job_mode = "local" if "--local" in argv else "docker"
-    h = build_cifar_harness("./run_cifar", job_mode=job_mode)
-    print(f"job_mode={job_mode}; downloading CIFAR-10 once (harness job, 0 tokens)...")
+    agent = "--agent" in argv  # use the real SDK evaluator (billed LLM judgment)
 
-    pos = seed_experiment("cifar reproduction (positive control)", exp_id="cal-pos")
-    neg = seed_experiment("cifar poison (negative control)", exp_id="cal-neg")
+    if agent:
+        h = build_cifar_agent_harness("./run_cifar", job_mode=job_mode)
+        pos, neg = calibration_records()  # pre-contracted; planner skipped
+        print(f"job_mode={job_mode} agent=SDK (real LLM evaluator, billed)")
+    else:
+        h = build_cifar_harness("./run_cifar", job_mode=job_mode)
+        pos = seed_experiment("cifar reproduction (positive control)", exp_id="cal-pos")
+        neg = seed_experiment("cifar poison (negative control)", exp_id="cal-neg")
+        print(f"job_mode={job_mode} agent=none (deterministic evaluator)")
     opened = h.calibration_gate(pos, neg)
 
     p = h.registry.get("cal-pos")

@@ -92,8 +92,14 @@ This also validated `docker` job mode end-to-end (GPU passthrough, read-only cac
   no GPU). Live check: `python -m lab.agents.smoke` (billed). Factory:
   `build_cifar_agent_harness`.
 
-**Still to do**
-- Live verification of the SDK agents on real compute (needs GPU + `ANTHROPIC_API_KEY`).
+**Combined live run — Stage 2 closed.** `python -m lab.run_cifar_calibration --agent`
+(real GPU + real LLM evaluator) on an RTX 3080:
+- positive: trained 2 epochs → measured 0.684 held-out → oracle passed → LLM judged PASS
+  (with genuine skeptical notes about leakage risk) → VERIFIED
+- negative: reported 0.99 → measured 0.088 → oracle failed → hard FAIL with **no LLM call**
+- gate OPEN; 31k tokens charged (LLM judgment), IO uncharged. ~46s wall.
+
+**Still to do (Stage 3+)**
 - Scale calibration up (CIFAR → ImageNet / a real research domain + oracle).
 - Stage 3: expert team + contract negotiation; constrain planner proposals to a vetted menu.
 - Stage 4: `decide_next`-driven autonomous experiment lineage.
