@@ -64,25 +64,33 @@ This started from a failed agent loop. The fixes are the architecture:
    in a **sandbox with no host shell**); they can't author arbitrary commands, and nothing
    they produce is accepted until the verifier confirms it.
 
-## What it can do (verified on a real GPU)
+## What it can do
+
+**Verification & anti-cheating — the core** (coding agents; runs without a GPU):
 
 | Capability | Try it | Proven result |
 |---|---|---|
 | **Resists common reward hacks** — hidden, untouchable grader | `python -m lab.run_cheat_demo` | hardcode/special-case cheats score 100% on visible tests → **REJECTED** on hidden |
 | **Reward hacks vs a naive verifier** — incl. **overwriting the grader** | `python -m lab.run_reward_hacking_demo` | memorize / special-case / grader-tamper all earn 100% naive reward → all **REJECTED** (grader restored before judging) |
 | **Hardened autograder** — grade a coding agent on hidden tests it can't see or edit | `python -m lab.run_autograde` | submitter "claimed 3/3"; verified **1/3** on hidden; tamper attempts blocked |
-| **…on a real benchmark** — the same, on **HumanEval+** (EvalPlus) hidden tests | `python -m lab.run_humaneval --live` | live Claude agent: **5/5** on the hidden expanded (plus) tests, 0 tamper attempts; graded vs a hidden reference it never saw |
-| Independent verification + **calibration gate** | `python -m lab.run_cifar_calibration` | trained model VERIFIED; a run lying `0.99` (real `0.088`) REJECTED |
-| **Expert committee** proposes a menu-constrained experiment | `python -m lab.run_cifar_committee` | chose epochs/lr; evaluator passed it but flagged a reported-vs-held-out inflation |
-| **Autonomous lineage** — a chain of experiments toward a goal, with memory | `python -m lab.run_cifar_autonomous` | iterates; stops on stall / budget |
-| **Cross-lab peer review** | `python -m lab.run_collab [--tamper]` | a 2nd lab CONFIRMS a genuine result; DISPUTES a tampered checkpoint |
+| **…on a real benchmark** — the same, on **HumanEval+** (EvalPlus) hidden tests | `python -m lab.run_humaneval --live` | live Claude agent: **5/5** on the hidden expanded (plus) tests, 0 tamper attempts |
 | **Implementer** — a sandboxed agent writes code, then it's independently graded | `python -m lab.run_implementer_demo` | agent wrote NumPy k-NN; held-out acc **0.9933** → VERIFIED |
-| **Recipe-authoring** — the lab grows its own menu, gated by admission | `python -m lab.run_recipe_author_demo` | agent authored a parameterized k-NN recipe; admitted (default VERIFIED, corrupted artifact REJECTED) |
+| **Recipe-authoring** — the lab grows its own menu, gated by admission | `python -m lab.run_recipe_author_demo` | authored a parameterized k-NN recipe; admitted only after default VERIFIED + corrupted REJECTED |
 
 Common reward hacks earn a perfect score from a *naive* verifier — all caught here
 (memorize, special-case, even **overwriting the grader**):
 
 ![Reward hacks vs a naive verifier vs a held-out, untouchable grader](assets/reward_hacking.gif)
+
+**Also — the same spine on real GPU model training** (it verifies *trained models*, not
+just code; CIFAR-10 is the stand-in domain, and these are the broader research-lab pieces):
+
+| Capability | Try it | Proven result |
+|---|---|---|
+| **Calibration gate** — verify a trained model, catch an inflated claim | `python -m lab.run_cifar_calibration` | trained model VERIFIED; a run **reporting 0.99** (really **0.088** on held-out) → **REJECTED** |
+| **Expert committee** proposes a menu-constrained experiment | `python -m lab.run_cifar_committee` | chose epochs/lr; the evaluator passed it but flagged a reported-vs-held-out inflation |
+| **Autonomous lineage** — a chain of experiments toward a goal, with memory | `python -m lab.run_cifar_autonomous` | iterates; stops on stall / budget |
+| **Cross-lab peer review** | `python -m lab.run_collab [--tamper]` | a 2nd lab CONFIRMS a genuine result; DISPUTES a tampered checkpoint |
 
 ## Quick start
 
