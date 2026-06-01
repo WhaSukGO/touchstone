@@ -66,6 +66,7 @@ class Implementer:
             datasets=list(self.task.datasets),
             command=self.task.entry_command,
             eval_command=self.task.eval_command,
+            eval_code=self.task.eval_code,   # lets the evaluator restore the grader (anti-tamper)
             code_dir=str(code_dir),
             budget=BudgetSpec(max_tokens=500_000, max_wall_s=1800, max_retries=1),
             oracle=OracleRef(criterion=crit, source="implementation-task"),

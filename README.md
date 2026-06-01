@@ -68,6 +68,7 @@ This started from a failed agent loop. The fixes are the architecture:
 | Capability | Try it | Proven result |
 |---|---|---|
 | **Catches reward hacking** — agents can't cheat a hidden, untouchable grader | `python -m lab.run_cheat_demo` | hardcode/special-case cheats score 100% on visible tests → **REJECTED** on hidden |
+| **The RLVR "verifier problem"** — reward hacks that fool a naive reward, incl. **overwriting the grader** | `python -m lab.run_reward_hacking_demo` | memorize / special-case / grader-tamper all earn 100% naive reward → all **REJECTED** (grader restored before judging) |
 | **Cheat-proof autograder** — grade a coding agent on hidden tests it can't game | `python -m lab.run_autograde` | submitter "claimed 3/3"; verified **1/3** on hidden; tamper attempts blocked |
 | **…on a real benchmark** — the same, on **HumanEval+** (EvalPlus) hidden tests | `python -m lab.run_humaneval --live` | live Claude agent: **5/5** on the hidden expanded (plus) tests, 0 tamper attempts; graded vs a hidden reference it never saw |
 | Independent verification + **calibration gate** | `python -m lab.run_cifar_calibration` | trained model VERIFIED; a run lying `0.99` (real `0.088`) REJECTED |

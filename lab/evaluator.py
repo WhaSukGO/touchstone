@@ -45,6 +45,11 @@ class ScriptEvaluator:
             except NoImageError:
                 image = None
 
+        # Anti-tamper: re-instantiate the grader from the contract right before judging, so
+        # a solver that overwrote eval.py during its run cannot affect grading.
+        if contract.eval_code and contract.code_dir:
+            (Path(contract.code_dir) / "eval.py").write_text(contract.eval_code)
+
         eval_out = self.layout.eval_out(rec.id)
         log_path = self.layout.logs(rec.id) / "eval.log"
         result = self.job_runner.run(JobSpec(
