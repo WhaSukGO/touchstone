@@ -68,6 +68,29 @@ JUDGMENT_SCHEMA = {
     "required": ["verdict", "rationale"],
 }
 
+# Committee (Stage 3): a menu-constrained proposal and an expert's review.
+PROPOSAL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "recipe_id": {"type": "string"},
+        "params": {"type": "object"},          # validated/clamped by the recipe
+        "hypothesis": {"type": "string"},
+        "rationale": {"type": "string"},
+    },
+    "required": ["recipe_id", "params"],
+}
+
+EXPERT_OPINION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "param_overrides": {"type": "object"},  # only declared params; clamped by recipe
+        "concerns": {"type": "array", "items": {"type": "string"}},
+        "approve": {"type": "boolean"},
+        "rationale": {"type": "string"},
+    },
+    "required": ["approve"],
+}
+
 # Planner's follow-up decision.
 DECIDE_SCHEMA = {
     "type": "object",

@@ -11,6 +11,7 @@ import tarfile
 import urllib.request
 from pathlib import Path
 
+from ..menu import Menu, ParamSpec, Recipe
 from ..models import (
     BudgetSpec, Criterion, DatasetRef, ExperimentContract, ExperimentRecord, FrameworkSpec,
     OracleRef, Status, Usage, VerifiedResult,
@@ -93,6 +94,34 @@ class CifarPlanner:
 def seed_experiment(hypothesis: str, *, exp_id: str, priority: int = 0) -> ExperimentRecord:
     return ExperimentRecord(id=exp_id, hypothesis=hypothesis,
                             status=Status.PROPOSED, priority=priority)
+
+
+def cifar_recipe() -> Recipe:
+    """Vetted CIFAR recipe for the committee/menu path. The command template is fixed;
+    the agents may only tune epochs and lr within range (the oracle bar is fixed)."""
+    return Recipe(
+        id="cifar-smallcnn",
+        description="Train SmallCNN on CIFAR-10, measure held-out top-1.",
+        framework=FrameworkSpec(name="torch", version="2.4", cuda="12.1"),
+        code_dir=CODE_DIR,
+        datasets=[
+            DatasetRef(name="cifar10-train", source=CIFAR_URL),
+            DatasetRef(name="cifar10-heldout", source=CIFAR_URL, held_out=True),
+        ],
+        train_template="LAB_EPOCHS={epochs} LAB_LR={lr} LAB_SEED={seed} python /code/train.py",
+        eval_command="python /code/eval.py",
+        metric="top1",
+        threshold=0.45,
+        params=[
+            ParamSpec("epochs", "int", low=1, high=20, default=2),
+            ParamSpec("lr", "float", low=1e-4, high=1e-2, default=1e-3),
+        ],
+        max_wall_s=1800.0,
+    )
+
+
+def cifar_menu() -> Menu:
+    return Menu([cifar_recipe()])
 
 
 def cifar_contract(poison: bool) -> ExperimentContract:

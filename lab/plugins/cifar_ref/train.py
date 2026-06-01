@@ -19,13 +19,14 @@ from model import SmallCNN  # noqa: E402
 
 def main():
     epochs = int(os.environ.get("LAB_EPOCHS", "2"))
+    lr = float(os.environ.get("LAB_LR", "1e-3"))
     poison = os.environ.get("LAB_POISON", "0") == "1"
     seed = int(os.environ.get("LAB_SEED", "0"))
     torch.manual_seed(seed)
     np.random.seed(seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     art = os.environ["LAB_ARTIFACTS"]
-    print(f"device={device} epochs={epochs} poison={poison}", flush=True)
+    print(f"device={device} epochs={epochs} lr={lr} poison={poison}", flush=True)
 
     x_np, y_np = load_split(os.environ["LAB_DATA"])
     x = torch.tensor(x_np)
@@ -34,7 +35,7 @@ def main():
     bs = 256
 
     model = SmallCNN().to(device)
-    opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
     lossf = nn.CrossEntropyLoss()
 
     model.train()

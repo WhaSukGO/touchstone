@@ -99,10 +99,24 @@ This also validated `docker` job mode end-to-end (GPU passthrough, read-only cac
 - negative: reported 0.99 → measured 0.088 → oracle failed → hard FAIL with **no LLM call**
 - gate OPEN; 31k tokens charged (LLM judgment), IO uncharged. ~46s wall.
 
-**Still to do (Stage 3+)**
-- Scale calibration up (CIFAR → ImageNet / a real research domain + oracle).
-- Stage 3: expert team + contract negotiation; constrain planner proposals to a vetted menu.
-- Stage 4: `decide_next`-driven autonomous experiment lineage.
+## Stage 3 status — expert committee + vetted menu
+
+**Done** (`lab/menu.py`, `lab/agents/committee.py`):
+- **Capability menu (the guardrail).** Agents can only pick a vetted `Recipe` and set its
+  declared params; the recipe owns the (reviewed) command template and a **fixed** oracle
+  bar. Params are type-checked and **clamped**, unknown keys are **dropped** — so no raw
+  model-authored string ever reaches the shell, and the success bar can't be gamed down.
+- **Committee meeting.** PI drafts a menu-constrained proposal → Modeling + Data experts
+  review (param overrides + concerns) → deterministic synthesis → `Menu.build` validates.
+  Implements the Planner protocol, so it drops into the harness (`build_cifar_committee_harness`).
+- Demonstrated offline: a PI proposing `epochs=500` is tuned to `4` by the Modeling expert
+  and would be clamped to `20` regardless; an injected `"; rm -rf /"` param is dropped; a
+  hallucinated recipe id fails safe (`MenuError` → experiment FAILED, loop continues).
+
+**Still to do (Stage 4+)**
+- Live committee run on GPU (needs GPU + `ANTHROPIC_API_KEY`).
+- Scale up (CIFAR → ImageNet / a real research domain + oracle; more recipes in the menu).
+- Stage 4: `decide_next`-driven autonomous experiment lineage + failed-approaches feedback.
 
 ## Layout
 

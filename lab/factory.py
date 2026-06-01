@@ -97,3 +97,24 @@ def build_cifar_agent_harness(root: str | Path, *, job_mode: str = "docker",
     h.planner = SdkPlanner(model=m)
     h.evaluator = SdkEvaluator(h.evaluator, model=m)  # wrap the deterministic ScriptEvaluator
     return h
+
+
+def build_cifar_committee_harness(root: str | Path, *, job_mode: str = "docker",
+                                  images_path: str | Path = "images/registry.yaml",
+                                  model: str | None = None,
+                                  max_total_tokens: int = 4_000_000,
+                                  max_experiments: int = 100,
+                                  lease_timeout_s: float = 1800.0) -> Harness:
+    """Stage 3: experiments proposed by an expert COMMITTEE constrained to the CIFAR menu
+    (it can only select+parameterize a vetted recipe), judged by the skeptical
+    SdkEvaluator. Calibration records still carry fixed contracts. Live use is billed."""
+    from .agents import DEFAULT_MODEL, Committee, SdkEvaluator
+    from .plugins.cifar import cifar_menu
+
+    h = build_cifar_harness(root, job_mode=job_mode, images_path=images_path,
+                            max_total_tokens=max_total_tokens,
+                            max_experiments=max_experiments, lease_timeout_s=lease_timeout_s)
+    m = model or DEFAULT_MODEL
+    h.planner = Committee(cifar_menu(), model=m, notebook=h.notebook)
+    h.evaluator = SdkEvaluator(h.evaluator, model=m)
+    return h
