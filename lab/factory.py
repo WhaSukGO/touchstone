@@ -101,6 +101,7 @@ def build_cifar_agent_harness(root: str | Path, *, job_mode: str = "docker",
 
 def build_implementer_harness(root: str | Path, task, author_fn, *, job_mode: str = "local",
                               images_path: str | Path = "images/registry.yaml",
+                              provider=None,
                               max_total_tokens: int = 2_000_000, max_experiments: int = 20,
                               lease_timeout_s: float = 1800.0) -> Harness:
     """Stage 7: experiments whose code is AUTHORED by an Implementer, then graded by the
@@ -114,7 +115,7 @@ def build_implementer_harness(root: str | Path, task, author_fn, *, job_mode: st
     queue = Queue(registry)
     gpu_lease = GpuLease(layout.gpu_lock)
     image_registry = ImageRegistry(images_path)
-    dataset_cache = DatasetCache(layout.cache, DummyDatasetProvider())
+    dataset_cache = DatasetCache(layout.cache, provider or DummyDatasetProvider())
     job_runner = JobRunner(default_mode=job_mode)
     budget = Budget(max_total_tokens=max_total_tokens, max_experiments=max_experiments,
                     state_path=layout.budget_state)
