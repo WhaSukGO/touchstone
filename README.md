@@ -7,6 +7,8 @@ Claude agents proposes, implements, and runs experiments on GPU — and an indep
 skeptical evaluator verifies every result on held-out data against a fixed oracle, so
 nothing counts as "done" until something independent confirms it actually works.**
 
+**See it in 10 seconds** (no GPU, no API key): `python -m lab.demo` — or read [DEMO.md](DEMO.md).
+
 Built on the Anthropic Agent SDK. Inspired by Anthropic's engineering posts on
 [harness design for long-running agents](https://www.anthropic.com/engineering/harness-design-long-running-apps)
 and [building a C compiler](https://www.anthropic.com/engineering/building-c-compiler).
