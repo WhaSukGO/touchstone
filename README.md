@@ -66,6 +66,7 @@ This started from a failed agent loop. The fixes are the architecture:
 |---|---|---|
 | **Catches reward hacking** — agents can't cheat a hidden, untouchable grader | `python -m lab.run_cheat_demo` | hardcode/special-case cheats score 100% on visible tests → **REJECTED** on hidden |
 | **Cheat-proof autograder** — grade a coding agent on hidden tests it can't game | `python -m lab.run_autograde` | submitter "claimed 3/3"; verified **1/3** on hidden; tamper attempts blocked |
+| **…on a real benchmark** — the same, on **HumanEval+** (EvalPlus) hidden tests | `python -m lab.run_humaneval [--live]` | differential-tests the agent's function vs a hidden reference: base (claimed) vs expanded plus (actual) |
 | Independent verification + **calibration gate** | `python -m lab.run_cifar_calibration` | trained model VERIFIED; a run lying `0.99` (real `0.088`) REJECTED |
 | **Expert committee** proposes a menu-constrained experiment | `python -m lab.run_cifar_committee` | chose epochs/lr; evaluator passed it but flagged a reported-vs-held-out inflation |
 | **Autonomous lineage** — a chain of experiments toward a goal, with memory | `python -m lab.run_cifar_autonomous` | iterates; stops on stall / budget |
