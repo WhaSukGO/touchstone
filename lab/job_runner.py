@@ -29,6 +29,7 @@ class JobSpec:
     data_dir: str | None = None
     weights_dir: str | None = None
     eval_out_dir: str | None = None
+    code_dir: str | None = None  # reference/experiment code, mounted ro at /code
     image: str | None = None
     mode: str = "local"          # "local" | "docker"
     env: dict = field(default_factory=dict)
@@ -62,6 +63,8 @@ class JobRunner:
             spec.weights_dir = os.path.abspath(spec.weights_dir)
         if spec.eval_out_dir:
             spec.eval_out_dir = os.path.abspath(spec.eval_out_dir)
+        if spec.code_dir:
+            spec.code_dir = os.path.abspath(spec.code_dir)
 
         ensure_dir(spec.workdir)
         ensure_dir(spec.artifacts_dir)
@@ -100,6 +103,8 @@ class JobRunner:
             env["LAB_WEIGHTS"] = spec.weights_dir
         if spec.eval_out_dir:
             env["LAB_EVAL_OUT"] = spec.eval_out_dir
+        if spec.code_dir:
+            env["LAB_CODE"] = spec.code_dir
         return env
 
     def _docker_argv(self, spec: JobSpec) -> list[str]:
@@ -123,6 +128,9 @@ class JobRunner:
         if spec.eval_out_dir:
             mounts["/eval_out"] = spec.eval_out_dir
             envs["LAB_EVAL_OUT"] = "/eval_out"
+        if spec.code_dir:
+            mounts["/code:ro"] = spec.code_dir
+            envs["LAB_CODE"] = "/code"
         for container_path, host_path in mounts.items():
             cp, _, ro = container_path.partition(":")
             suffix = ":ro" if ro == "ro" else ""

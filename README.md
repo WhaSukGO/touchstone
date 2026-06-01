@@ -27,6 +27,10 @@ Design docs:
 pip install -r requirements.txt
 python -m lab.selftest      # proves the calibration gate with no model/GPU/Docker
 pytest -q                   # 10 tests, all local
+
+# Stage 2: real CIFAR-10 calibration on the GPU (needs Docker + nvidia runtime)
+docker pull pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime
+python -m lab.run_cifar_calibration
 ```
 
 Self-test output shows the key property — the negative control reports a fake score of
@@ -64,15 +68,25 @@ The lab's only public output is a `VerifiedResult` **signed by the evaluator**, 
 provenance (config hash, image, dataset hashes, seed) so future labs can trust it
 (multi-lab collaboration).
 
-## What is NOT here yet (Stage 2)
+## Stage 2 status
 
-- Agent SDK wiring: replace `ScriptedPlanner` / `DeterministicEvaluator` with real
-  Claude sessions. The evaluator **must** run in a separate process/context from the
-  generator. Nothing else in the harness changes — that is the point of the Protocols.
-- A real domain plugin (`DatasetProvider`, `Oracle`, `MetricExtractor`, held-out split)
-  for the chosen CV subdomain, plus a real reproduction target for calibration
-  (e.g. ResNet-50 / ImageNet top-1 ≈ 0.76).
-- `docker` job mode against the GPU (code path exists in `JobRunner`; untested on this box).
+**Done — real CIFAR-10 calibration on the GPU** (`lab/plugins/cifar.py`, `cifar_ref/`,
+`lab/evaluator.py`). Verified on an RTX 3080 via Docker + torch 2.4/cu121:
+- positive control: 2-epoch SmallCNN → evaluator measured **65.7%** held-out → VERIFIED
+- negative control: 0-epoch model **reporting 0.99** → evaluator measured **8.75%** → REJECTED
+- gate OPEN; **0 tokens** (calibration is LLM-free, by design — it validates the
+  evaluator against a known answer).
+
+This also validated `docker` job mode end-to-end (GPU passthrough, read-only cache mounts,
+`/code` reference-code mount, held-out isolation).
+
+**Still to do**
+- **Agent SDK wiring**: replace `ScriptedPlanner` / `DeterministicEvaluator` with real
+  Claude sessions for *non-calibration* experiments. The evaluator **must** run in a
+  separate process/context from the generator. Nothing else in the harness changes —
+  that is the point of the Protocols.
+- Scale calibration up (CIFAR → ImageNet / a real research domain + oracle).
+- `decide_next`-driven autonomous experiment lineage (Stage 4).
 
 ## Layout
 

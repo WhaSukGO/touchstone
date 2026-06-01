@@ -8,3 +8,5 @@ state/
 logs/
 workspaces/
 _selftest_run/
+run_cifar/
+run/

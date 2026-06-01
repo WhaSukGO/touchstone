@@ -90,10 +90,10 @@ class Harness:
             data_dir = None
             ds_names: list[str] = []
             for ref in contract.datasets:
-                self.dataset_cache.ensure(ref)  # download once; cached thereafter
+                entry = self.dataset_cache.ensure(ref)  # download once; cached thereafter
                 ds_names.append(ref.name)
                 if not ref.held_out:
-                    data_dir = str(self.dataset_cache.root / "data")
+                    data_dir = entry.path  # specific dataset dir (holds the actual files)
             rec.datasets = ds_names
             self._commit(rec, Status.DATA_READY, f"datasets={ds_names}")
 
@@ -108,7 +108,8 @@ class Harness:
                 job = self.job_runner.run(JobSpec(
                     exp_id=rec.id, command=contract.command, workdir=str(workdir),
                     artifacts_dir=str(artifacts), log_path=str(log_path),
-                    data_dir=data_dir, image=image, mode=self.job_mode,
+                    data_dir=data_dir, code_dir=contract.code_dir,
+                    image=image, mode=self.job_mode,
                 ))
             self.budget.note_io(rec.id, job.wall_seconds)
             rec.wall_seconds += job.wall_seconds

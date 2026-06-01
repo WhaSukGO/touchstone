@@ -92,6 +92,7 @@ class ExperimentContract:
     datasets: list[DatasetRef] = field(default_factory=list)
     command: str = ""            # train/produce command (runs in container)
     eval_command: str | None = None  # evaluator's independent measurement command
+    code_dir: str | None = None  # host dir of reference/experiment code, mounted ro at /code
     budget: BudgetSpec | None = None
     oracle: OracleRef | None = None
     seed: int = 0

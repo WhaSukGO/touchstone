@@ -7,12 +7,14 @@ from pathlib import Path
 
 from .budget import Budget
 from .dataset_cache import DatasetCache
+from .evaluator import ScriptEvaluator
 from .gpu_lease import GpuLease
 from .image_registry import ImageRegistry
 from .job_runner import JobRunner
 from .loop import Harness
 from .notebook import Notebook
 from .paths import Layout
+from .plugins.cifar import CifarDatasetProvider, CifarMetricExtractor, CifarPlanner
 from .plugins.dummy import (
     DeterministicEvaluator, DummyDatasetProvider, DummyMetricExtractor, ScriptedPlanner,
 )
@@ -43,4 +45,34 @@ def build_dummy_harness(root: str | Path, *, job_mode: str = "local",
         job_runner=job_runner, budget=budget, notebook=notebook,
         planner=ScriptedPlanner(), evaluator=evaluator,
         metric_extractor=DummyMetricExtractor(), job_mode=job_mode,
+    )
+
+
+def build_cifar_harness(root: str | Path, *, job_mode: str = "docker",
+                        images_path: str | Path = "images/registry.yaml",
+                        max_total_tokens: int = 1_000_000,
+                        max_experiments: int = 100,
+                        lease_timeout_s: float = 1800.0) -> Harness:
+    """Stage 2 calibration harness: real CIFAR-10 on the GPU via Docker+torch, verified
+    by the independent ScriptEvaluator on the held-out split."""
+    layout = Layout(Path(root))
+    ensure_dir(layout.state)
+    registry = Registry(layout.registry_db)
+    queue = Queue(registry)
+    gpu_lease = GpuLease(layout.gpu_lock)
+    image_registry = ImageRegistry(images_path)
+    dataset_cache = DatasetCache(layout.cache, CifarDatasetProvider(layout.cache / "raw"))
+    job_runner = JobRunner(default_mode=job_mode)
+    budget = Budget(max_total_tokens=max_total_tokens, max_experiments=max_experiments,
+                    state_path=layout.budget_state)
+    notebook = Notebook(notebook_path=layout.notebook, failed_path=layout.failed)
+    evaluator = ScriptEvaluator(layout, job_runner, dataset_cache, image_registry,
+                                mode=job_mode, session_id="evaluator-cifar")
+    return Harness(
+        layout=layout, registry=registry, queue=queue, gpu_lease=gpu_lease,
+        image_registry=image_registry, dataset_cache=dataset_cache,
+        job_runner=job_runner, budget=budget, notebook=notebook,
+        planner=CifarPlanner(), evaluator=evaluator,
+        metric_extractor=CifarMetricExtractor(), job_mode=job_mode,
+        lease_timeout_s=lease_timeout_s,
     )
