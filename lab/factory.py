@@ -109,12 +109,14 @@ def build_cifar_committee_harness(root: str | Path, *, job_mode: str = "docker",
     (it can only select+parameterize a vetted recipe), judged by the skeptical
     SdkEvaluator. Calibration records still carry fixed contracts. Live use is billed."""
     from .agents import DEFAULT_MODEL, Committee, SdkEvaluator
+    from .history import ResearchHistory
     from .plugins.cifar import cifar_menu
 
     h = build_cifar_harness(root, job_mode=job_mode, images_path=images_path,
                             max_total_tokens=max_total_tokens,
                             max_experiments=max_experiments, lease_timeout_s=lease_timeout_s)
     m = model or DEFAULT_MODEL
-    h.planner = Committee(cifar_menu(), model=m, notebook=h.notebook)
+    h.planner = Committee(cifar_menu(), model=m, notebook=h.notebook,
+                          history=ResearchHistory(h.registry))
     h.evaluator = SdkEvaluator(h.evaluator, model=m)
     return h

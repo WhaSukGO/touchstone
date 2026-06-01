@@ -86,7 +86,7 @@ class CifarPlanner:
         poison = "poison" in rec.hypothesis.lower()
         return _contract(poison), Usage()
 
-    def decide_next(self, result: VerifiedResult, rec: ExperimentRecord
+    def decide_next(self, result: VerifiedResult | None, rec: ExperimentRecord
                     ) -> tuple[ExperimentRecord | None, Usage]:
         return None, Usage()
 

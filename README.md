@@ -113,10 +113,29 @@ This also validated `docker` job mode end-to-end (GPU passthrough, read-only cac
   and would be clamped to `20` regardless; an injected `"; rm -rf /"` param is dropped; a
   hallucinated recipe id fails safe (`MenuError` → experiment FAILED, loop continues).
 
-**Still to do (Stage 4+)**
-- Live committee run on GPU (needs GPU + `ANTHROPIC_API_KEY`).
-- Scale up (CIFAR → ImageNet / a real research domain + oracle; more recipes in the menu).
-- Stage 4: `decide_next`-driven autonomous experiment lineage + failed-approaches feedback.
+Live committee run verified on GPU (`python -m lab.run_cifar_committee`): the meeting
+chose `epochs=5/lr=0.001`, trained, the evaluator measured 0.768 held-out → PASS while
+flagging the reported/held-out gap as inflation.
+
+## Stage 4 status — autonomous lineage
+
+**Done** (`lab/history.py`, hardened `Harness.loop`):
+- **Research memory.** `ResearchHistory` digests the registry (prior configs, verdicts,
+  measured metrics, evaluator notes) into the committee's prompts, so each experiment
+  builds on the last and doesn't re-tread a tried config (the C-compiler "running doc"
+  lesson). `best(metric)` tracks the frontier.
+- **Lineage loop.** `loop(goal_metric, max_stall)` chains experiments via `decide_next`,
+  which is now called after **every** terminal outcome (VERIFIED / REJECTED / FAILED) so
+  the lab recovers from a bad experiment, not just chains successes. Stops on: planner
+  declines, no improvement for `max_stall` runs, the experiment cap, or the token budget.
+- Runner: `python -m lab.run_cifar_autonomous [--max N] [--stall K]` (billed + GPU).
+- Offline-tested (dummy harness): lineage runs to decline / stall / cap; `decide_next` is
+  invoked after a rejection; parent links form a chain.
+
+**Still to do**
+- Live autonomous run on GPU (a multi-experiment lineage; pricier — ~$0.5–1, a few min).
+- Scale up (CIFAR → ImageNet / a real domain; more recipes; soft dedup of tried configs).
+- Stage 5: composable lab → multi-lab collaboration over signed `VerifiedResult`s.
 
 ## Layout
 

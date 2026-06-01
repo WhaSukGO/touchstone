@@ -157,20 +157,49 @@ class Harness:
         return ok
 
     # ---- autonomous loop -------------------------------------------------------
-    def loop(self, *, require_gate: bool = True) -> None:
+    def loop(self, *, require_gate: bool = True, goal_metric: str | None = None,
+             max_stall: int | None = None) -> dict:
+        """Run the experiment lineage until the planner declines a follow-up, no
+        improvement on goal_metric for max_stall experiments, or the budget/experiment
+        cap is hit. decide_next is called after EVERY terminal outcome (including a
+        REJECTED or FAILED one) so the lab can recover from a bad experiment, not just
+        chain successes."""
         if require_gate and not self.autonomy_enabled:
             raise RuntimeError("autonomy locked: pass calibration_gate() first")
         # crash recovery: re-queue interrupted experiments (jobs are idempotent)
         for rec in self.queue.interrupted():
             self.notebook.log_event(rec, "resuming interrupted experiment")
             self.queue.requeue(rec)
+
+        best: float | None = None
+        stall = 0
+        ran = 0
         while self.budget.can_spawn():
             rec = self.queue.pop_next()
             if rec is None:
                 break
             rec = self.run_experiment(rec)
-            if rec.status == Status.VERIFIED and rec.verdict is not None:
-                nxt, usage = self.planner.decide_next(rec.verdict, rec)
-                self.budget.charge_tokens(rec.id, usage.tokens_in, usage.tokens_out)
-                if nxt is not None:
-                    self.queue.push(nxt)
+            ran += 1
+
+            if goal_metric is not None:
+                v = None
+                if rec.verdict and rec.verdict.verdict == "PASS":
+                    v = rec.verdict.measured_metrics.get(goal_metric)
+                if v is not None and (best is None or float(v) > best):
+                    best = float(v)
+                    stall = 0
+                else:
+                    stall += 1
+                if max_stall is not None and stall >= max_stall:
+                    self.notebook.log_event(
+                        rec, f"stop: {stall} experiments without improvement on "
+                             f"{goal_metric} (best={best})")
+                    break
+
+            nxt, usage = self.planner.decide_next(rec.verdict, rec)
+            self.budget.charge_tokens(rec.id, usage.tokens_in, usage.tokens_out)
+            if nxt is not None:
+                self.queue.push(nxt)
+
+        return {"experiments_ran": ran, "best": best, "goal_metric": goal_metric,
+                "tokens": self.budget.state.total_tokens}

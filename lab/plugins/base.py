@@ -39,7 +39,7 @@ class Planner(Protocol):
     def propose_contract(self, rec: ExperimentRecord) -> tuple[ExperimentContract, Usage]: ...
 
     def decide_next(
-        self, result: VerifiedResult, rec: ExperimentRecord
+        self, result: VerifiedResult | None, rec: ExperimentRecord
     ) -> tuple[ExperimentRecord | None, Usage]: ...
 
 

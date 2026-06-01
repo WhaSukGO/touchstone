@@ -38,12 +38,15 @@ def _propose_prompt(rec: ExperimentRecord) -> str:
             f"  {rec.hypothesis}\n\n{EVAL_METRIC_NOTE}")
 
 
-def _decide_prompt(result: VerifiedResult, rec: ExperimentRecord) -> str:
-    return (f"The experiment '{rec.id}' ({rec.hypothesis}) finished with verdict "
-            f"{result.verdict}. Measured: {result.measured_metrics}. Oracle: "
-            f"{result.oracle_comparison}. Decide whether to propose ONE follow-up "
-            f"experiment that would advance the research, and if so give a new id and "
-            f"hypothesis.")
+def _decide_prompt(result: VerifiedResult | None, rec: ExperimentRecord) -> str:
+    if result is None:
+        outcome = "FAILED (infrastructure error, no measurement)"
+    else:
+        outcome = (f"{result.verdict}; measured {result.measured_metrics}, oracle "
+                   f"{result.oracle_comparison}")
+    return (f"The experiment '{rec.id}' ({rec.hypothesis}) finished: {outcome}. "
+            f"Decide whether to propose ONE follow-up experiment that would advance the "
+            f"research, and if so give a new id and hypothesis.")
 
 
 class SdkPlanner:
@@ -59,7 +62,7 @@ class SdkPlanner:
         contract = from_dict(ExperimentContract, res.data)
         return contract, res.usage
 
-    def decide_next(self, result: VerifiedResult, rec: ExperimentRecord
+    def decide_next(self, result: VerifiedResult | None, rec: ExperimentRecord
                     ) -> tuple[ExperimentRecord | None, Usage]:
         res = self.run_fn(_decide_prompt(result, rec), system_prompt=PLANNER_SYS,
                           schema=DECIDE_SCHEMA, model=self.model, max_turns=self.max_turns)

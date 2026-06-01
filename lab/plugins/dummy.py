@@ -76,7 +76,7 @@ class ScriptedPlanner:
         poisoned = "poison" in rec.hypothesis.lower()
         return _contract(poisoned), Usage(tokens_in=0, tokens_out=0)
 
-    def decide_next(self, result: VerifiedResult, rec: ExperimentRecord
+    def decide_next(self, result: VerifiedResult | None, rec: ExperimentRecord
                     ) -> tuple[ExperimentRecord | None, Usage]:
         return None, Usage()  # self-test runs a single experiment per call
 

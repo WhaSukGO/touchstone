@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from ..history import ResearchHistory
 from ..menu import Menu, Proposal
 from ..models import ExperimentRecord, Usage, VerifiedResult
 from ..notebook import Notebook
@@ -45,10 +46,17 @@ DATA = Expert("Data", (
 DEFAULT_EXPERTS = [MODELING, DATA]
 
 
-def _draft_prompt(menu: Menu, rec: ExperimentRecord) -> str:
-    return (f"{menu.describe()}\n\nResearch goal:\n  {rec.hypothesis}\n\n"
-            f"Propose an experiment: choose a recipe_id, set its params, and state a "
-            f"testable hypothesis. Success must be the recipe's fixed held-out metric.")
+def _history_block(history: ResearchHistory | None) -> str:
+    if history is None:
+        return ""
+    return f"\nPrior experiments (build on these; do NOT repeat a tried config):\n{history.summary()}\n"
+
+
+def _draft_prompt(menu: Menu, rec: ExperimentRecord, history: ResearchHistory | None) -> str:
+    return (f"{menu.describe()}\n{_history_block(history)}\nResearch goal:\n  {rec.hypothesis}"
+            f"\n\nPropose an experiment: choose a recipe_id, set its params, and state a "
+            f"testable hypothesis. Success must be the recipe's fixed held-out metric. "
+            f"If history exists, choose params expected to BEAT the best result so far.")
 
 
 def _review_prompt(menu: Menu, recipe_id: str, params: dict, hypothesis: str,
@@ -59,11 +67,17 @@ def _review_prompt(menu: Menu, recipe_id: str, params: dict, hypothesis: str,
             f"and approve true/false.")
 
 
-def _decide_prompt(menu: Menu, result: VerifiedResult, rec: ExperimentRecord) -> str:
-    return (f"{menu.describe()}\n\nExperiment '{rec.id}' ({rec.hypothesis}) finished with "
-            f"verdict {result.verdict}; measured {result.measured_metrics}, oracle "
-            f"{result.oracle_comparison}. Propose ONE follow-up experiment (new id + "
-            f"hypothesis) if it would advance the research, else decline.")
+def _decide_prompt(menu: Menu, result: VerifiedResult | None, rec: ExperimentRecord,
+                   history: ResearchHistory | None) -> str:
+    if result is None:
+        outcome = "FAILED (infrastructure error, no measurement)"
+    else:
+        outcome = (f"{result.verdict}; measured {result.measured_metrics}, oracle "
+                   f"{result.oracle_comparison}")
+    return (f"{menu.describe()}\n{_history_block(history)}\nExperiment '{rec.id}' "
+            f"({rec.hypothesis}) finished: {outcome}.\n\nPropose ONE follow-up experiment "
+            f"(new id + hypothesis) that would beat the best result so far, OR decline "
+            f"(propose_followup=false) if returns are diminishing or the goal is met.")
 
 
 class Committee:
@@ -71,7 +85,7 @@ class Committee:
 
     def __init__(self, menu: Menu, *, model: str = DEFAULT_MODEL, run_fn: RunFn = run_agent,
                  experts: list[Expert] | None = None, pi: Expert = PI, max_turns: int = 6,
-                 notebook: Notebook | None = None):
+                 notebook: Notebook | None = None, history: ResearchHistory | None = None):
         self.menu = menu
         self.model = model
         self.run_fn = run_fn
@@ -79,12 +93,14 @@ class Committee:
         self.experts = DEFAULT_EXPERTS if experts is None else experts
         self.max_turns = max_turns
         self.notebook = notebook
+        self.history = history
         self.last_meeting: dict = {}
 
     def propose_contract(self, rec: ExperimentRecord):
         tin = tout = 0
 
-        draft_res = self.run_fn(_draft_prompt(self.menu, rec), system_prompt=self.pi.system_prompt,
+        draft_res = self.run_fn(_draft_prompt(self.menu, rec, self.history),
+                                system_prompt=self.pi.system_prompt,
                                 schema=PROPOSAL_SCHEMA, model=self.model, max_turns=self.max_turns)
         tin += draft_res.usage.tokens_in
         tout += draft_res.usage.tokens_out
@@ -120,8 +136,8 @@ class Committee:
                                          f"cmd={contract.command}; concerns={all_concerns}")
         return contract, Usage(tin, tout)
 
-    def decide_next(self, result: VerifiedResult, rec: ExperimentRecord):
-        res = self.run_fn(_decide_prompt(self.menu, result, rec),
+    def decide_next(self, result: VerifiedResult | None, rec: ExperimentRecord):
+        res = self.run_fn(_decide_prompt(self.menu, result, rec, self.history),
                           system_prompt=self.pi.system_prompt, schema=DECIDE_SCHEMA,
                           model=self.model, max_turns=self.max_turns)
         d = res.data or {}
