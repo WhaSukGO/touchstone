@@ -85,7 +85,10 @@ async def _run_async(prompt: str, *, system_prompt: str | None, schema: dict | N
     async for msg in query(prompt=prompt, options=options):
         if isinstance(msg, ResultMessage):
             u = msg.usage or {}
-            in_tok = u.get("input_tokens", in_tok)
+            # Include cache tokens: the SDK reports most input under cache_* fields, so
+            # plain input_tokens undercounts. Budget on the true input cost.
+            in_tok = (u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0)
+                      + u.get("cache_creation_input_tokens", 0))
             out_tok = u.get("output_tokens", out_tok)
             cost = msg.total_cost_usd or 0.0
             text = msg.result or ""
