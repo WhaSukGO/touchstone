@@ -129,6 +129,10 @@ class Menu:
     def ids(self) -> list[str]:
         return list(self._recipes)
 
+    def admit(self, recipe: Recipe) -> None:
+        """Add a recipe to the menu (Stage 6: only via the admission gate)."""
+        self._recipes[recipe.id] = recipe
+
     def recipe(self, recipe_id: str) -> Recipe:
         r = self._recipes.get(recipe_id)
         if r is None:
