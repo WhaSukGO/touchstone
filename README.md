@@ -1,4 +1,6 @@
-# CV Research Lab
+# Touchstone
+
+*An autonomous computer-vision research lab that trusts no claim it didn't independently measure.*
 
 **A harness-engineered, self-directing computer-vision research lab where a committee of
 Claude agents proposes, implements, and runs experiments on GPU — and an independent,
