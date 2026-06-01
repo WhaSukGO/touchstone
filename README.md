@@ -132,10 +132,30 @@ flagging the reported/held-out gap as inflation.
 - Offline-tested (dummy harness): lineage runs to decline / stall / cap; `decide_next` is
   invoked after a rejection; parent links form a chain.
 
+## Stage 5 status — composable labs + collaboration
+
+**Done** (`lab/lab.py`, `lab/exchange.py`):
+- **`Lab`** wraps a Harness behind a clean boundary: hypothesis in → signed
+  `VerifiedResult` out. A lab's only export is that signed result (with provenance) —
+  never a raw generator claim.
+- **Trust gate + exchange.** `is_trustworthy` (PASS + signed + provenance) guards what
+  one lab will consume from another; `ResultExchange` refuses to publish anything that
+  fails it.
+- **Cross-lab peer review** (`peer_review`): a second lab independently re-measures
+  another lab's published artifact with its own evaluator, in its own context/registry,
+  before the result is trusted — extending generator≠evaluator across lab boundaries.
+  Offline-proven: it **confirms** a genuine result and **disputes** a tampered artifact
+  (the reviewer measures the real checkpoint and catches the discrepancy).
+- Runner: `python -m lab.run_collab [--tamper]` (two CIFAR labs, GPU-only, no API spend).
+
 **Still to do**
-- Live autonomous run on GPU (a multi-experiment lineage; pricier — ~$0.5–1, a few min).
-- Scale up (CIFAR → ImageNet / a real domain; more recipes; soft dedup of tried configs).
-- Stage 5: composable lab → multi-lab collaboration over signed `VerifiedResult`s.
+- Live runs on GPU (autonomous lineage; the two-lab collaboration demo).
+- Scale up (CIFAR → ImageNet / more domains; more menu recipes).
+- A shared GPU/resource broker across labs (today each lab has its own lease, fine when
+  labs run sequentially); soft dedup of tried configs.
+- Beyond the roadmap: autonomous **recipe-authoring** (committee proposes new recipes that
+  must pass review + calibration before entering the menu) — the bridge between full
+  autonomy and the menu guardrail.
 
 ## Layout
 
