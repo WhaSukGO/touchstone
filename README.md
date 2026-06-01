@@ -11,6 +11,8 @@ nothing counts as "done" until something independent confirms it actually works.
 catch an agent cheating its own tests. (Or `python -m lab.demo` for the full tour;
 [DEMO.md](DEMO.md).)
 
+![Touchstone catches an agent cheating its tests](assets/cheat.gif)
+
 Built on the Anthropic Agent SDK. Inspired by Anthropic's engineering posts on
 [harness design for long-running agents](https://www.anthropic.com/engineering/harness-design-long-running-apps)
 and [building a C compiler](https://www.anthropic.com/engineering/building-c-compiler).

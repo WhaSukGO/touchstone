@@ -3,8 +3,11 @@
 **AI agents cheat their own evaluations. Touchstone makes that impossible.**
 
 The #1 fear about AI agents in 2025–26 is that they game their tests — hardcoding answers,
-special-casing the visible cases, editing the grader. Touchstone catches it. No GPU, no API
-key:
+special-casing the visible cases, editing the grader. Touchstone catches it.
+
+![Touchstone catches an agent cheating its tests](assets/cheat.gif)
+
+No GPU, no API key:
 
 ```bash
 pip install -r requirements.txt
