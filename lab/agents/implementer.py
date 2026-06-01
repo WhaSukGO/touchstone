@@ -118,12 +118,16 @@ def sdk_author(job_runner, image_registry, dataset_cache, *, model: str = "claud
             entry = dataset_cache.ensure(ref)
             if not ref.held_out:
                 data_dir = entry.path
-        return asyncio.run(_author_async(task, code_dir, job_runner, image, data_dir,
-                                         model, max_turns))
+        return asyncio.run(_run_authoring_session(
+            _author_prompt(task), code_dir, job_runner, image, data_dir, model, max_turns))
     return author
 
 
-async def _author_async(task, code_dir, job_runner, image, data_dir, model, max_turns) -> Usage:
+async def _run_authoring_session(prompt, code_dir, job_runner, image, data_dir, model,
+                                 max_turns) -> Usage:
+    """Reusable sandboxed authoring session (Implementer and recipe-authoring share it):
+    a Claude session writes/debugs code, executing only via the container sandbox tool,
+    with writes confined to code_dir and eval.py off-limits."""
     from claude_agent_sdk import (
         ClaudeAgentOptions, PermissionResultAllow, PermissionResultDeny, ResultMessage, query,
     )
@@ -154,7 +158,7 @@ async def _author_async(task, code_dir, job_runner, image, data_dir, model, max_
     )
 
     async def _prompt_stream():  # can_use_tool requires streaming-mode (AsyncIterable) input
-        yield {"type": "user", "message": {"role": "user", "content": _author_prompt(task)}}
+        yield {"type": "user", "message": {"role": "user", "content": prompt}}
 
     tin = tout = 0
     async for msg in query(prompt=_prompt_stream(), options=options):

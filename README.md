@@ -65,7 +65,7 @@ This started from a failed agent loop. The fixes are the architecture:
 | **Autonomous lineage** — a chain of experiments toward a goal, with memory | `python -m lab.run_cifar_autonomous` | iterates; stops on stall / budget |
 | **Cross-lab peer review** | `python -m lab.run_collab [--tamper]` | a 2nd lab CONFIRMS a genuine result; DISPUTES a tampered checkpoint |
 | **Implementer** — a sandboxed agent writes code, then it's independently graded | `python -m lab.run_implementer_demo` | agent wrote NumPy k-NN; held-out acc **0.9933** → VERIFIED |
-| **Recipe-authoring** — the lab grows its own menu, gated by admission | `pytest tests/test_recipe_author.py` | a measuring evaluator → admitted; a rubber-stamp evaluator → refused |
+| **Recipe-authoring** — the lab grows its own menu, gated by admission | `python -m lab.run_recipe_author_demo` | agent authored a parameterized k-NN recipe; admitted (default VERIFIED, corrupted artifact REJECTED) |
 
 ## Quick start
 
