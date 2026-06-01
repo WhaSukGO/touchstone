@@ -32,6 +32,7 @@ class JobSpec:
     code_dir: str | None = None  # reference/experiment code, mounted ro at /code
     image: str | None = None
     mode: str = "local"          # "local" | "docker"
+    network: str | None = None   # e.g. "none" to disable networking (sandboxed authoring)
     env: dict = field(default_factory=dict)
 
 
@@ -114,6 +115,8 @@ class JobRunner:
         # framework cache writes off a non-writable home.
         argv = ["docker", "run", "--rm", "--gpus", "all",
                 "--user", f"{os.getuid()}:{os.getgid()}"]
+        if spec.network:
+            argv += ["--network", spec.network]
         mounts = {
             "/workspace": spec.workdir,
             "/artifacts": spec.artifacts_dir,
