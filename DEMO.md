@@ -30,6 +30,9 @@ because Touchstone grades on tests the agent **can't see and can't edit**. (Thes
 exact reward hacks documented across 2025–26 agent benchmarks.) That's the whole product in
 one screen.
 
+Run `python -m lab.run_cheat_demo --live` and the honest solution is written by a **real
+sandboxed agent** (no host shell, no network) — verified on an RTX 3080, same verdicts.
+
 ---
 
 ## The full tour (3 beats)
