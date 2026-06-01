@@ -63,6 +63,7 @@ This started from a failed agent loop. The fixes are the architecture:
 | **Autonomous lineage** — a chain of experiments toward a goal, with memory | `python -m lab.run_cifar_autonomous` | iterates; stops on stall / budget |
 | **Cross-lab peer review** | `python -m lab.run_collab [--tamper]` | a 2nd lab CONFIRMS a genuine result; DISPUTES a tampered checkpoint |
 | **Implementer** — a sandboxed agent writes code, then it's independently graded | `python -m lab.run_implementer_demo` | agent wrote NumPy k-NN; held-out acc **0.9933** → VERIFIED |
+| **Recipe-authoring** — the lab grows its own menu, gated by admission | `pytest tests/test_recipe_author.py` | a measuring evaluator → admitted; a rubber-stamp evaluator → refused |
 
 ## Quick start
 
@@ -125,8 +126,9 @@ task.
 
 - It does **not invent novel methods or chase SOTA**. Autonomy means exploring the
   parameter space of vetted recipes, or implementing a *specified* task — not inventing.
-- New domains need a **human-authored recipe/plugin** (a few hours each). One CV recipe
-  (CIFAR-10) and one implementer task ship today.
+- The lab can now **author its own recipes** and admit them via a calibration gate
+  (Stage 6), but wiring a genuinely new *domain* (its dataset provider + CUDA image) is
+  still human setup. One CV recipe (CIFAR-10) and one implementer task ship today.
 - **Single local GPU, sequential**; labs run **in one process** (collaboration isn't
   networked).
 - Verification needs a **known oracle**, so it's strongest for reproduction-style work.
