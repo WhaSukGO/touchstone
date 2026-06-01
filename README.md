@@ -7,7 +7,9 @@ Claude agents proposes, implements, and runs experiments on GPU — and an indep
 skeptical evaluator verifies every result on held-out data against a fixed oracle, so
 nothing counts as "done" until something independent confirms it actually works.**
 
-**See it in 10 seconds** (no GPU, no API key): `python -m lab.demo` — or read [DEMO.md](DEMO.md).
+**See it in 10 seconds** (no GPU, no API key): `python -m lab.run_cheat_demo` — watch it
+catch an agent cheating its own tests. (Or `python -m lab.demo` for the full tour;
+[DEMO.md](DEMO.md).)
 
 Built on the Anthropic Agent SDK. Inspired by Anthropic's engineering posts on
 [harness design for long-running agents](https://www.anthropic.com/engineering/harness-design-long-running-apps)
@@ -62,6 +64,7 @@ This started from a failed agent loop. The fixes are the architecture:
 
 | Capability | Try it | Proven result |
 |---|---|---|
+| **Catches reward hacking** — agents can't cheat a hidden, untouchable grader | `python -m lab.run_cheat_demo` | hardcode/special-case cheats score 100% on visible tests → **REJECTED** on hidden |
 | Independent verification + **calibration gate** | `python -m lab.run_cifar_calibration` | trained model VERIFIED; a run lying `0.99` (real `0.088`) REJECTED |
 | **Expert committee** proposes a menu-constrained experiment | `python -m lab.run_cifar_committee` | chose epochs/lr; evaluator passed it but flagged a reported-vs-held-out inflation |
 | **Autonomous lineage** — a chain of experiments toward a goal, with memory | `python -m lab.run_cifar_autonomous` | iterates; stops on stall / budget |
