@@ -92,13 +92,15 @@ AUTHOR_SYS = (
 
 def _author_prompt(task: ImplementationTask) -> str:
     return (f"Task: {task.description}\n\n"
-            f"Write `{task.entry_filename}` in the current directory. The harness will run "
-            f"it as: `{task.entry_command}` and then grade it with a held-out evaluator "
-            f"(which you cannot see) against: {task.metric} {task.op} {task.threshold}.\n"
-            f"Inside the sandbox, your code is at /code ($LAB_CODE), training data (if any) "
-            f"at /data ($LAB_DATA), and you must write outputs to /artifacts "
-            f"($LAB_ARTIFACTS). Test with the 'run' tool until `{task.entry_command}` "
-            f"succeeds and writes the required artifact. Do not touch eval.py.")
+            f"Write `{task.entry_filename}` into your CURRENT DIRECTORY with the Write tool "
+            f"(use the cwd you are already in — do NOT write to /code; that path only "
+            f"exists inside the sandbox when you run code). The harness will run it as "
+            f"`{task.entry_command}` and grade it with a held-out evaluator you cannot see, "
+            f"against: {task.metric} {task.op} {task.threshold}.\n"
+            f"When you RUN code via the 'run' tool, your files appear at /code ($LAB_CODE), "
+            f"the data at /data ($LAB_DATA), and you write outputs to /artifacts "
+            f"($LAB_ARTIFACTS). Iterate with 'run' until `{task.entry_command}` succeeds "
+            f"and writes the required artifact. Do not touch eval.py.")
 
 
 def sdk_author(job_runner, image_registry, dataset_cache, *, model: str = "claude-sonnet-4-6",
@@ -149,13 +151,21 @@ async def _run_authoring_session(prompt, code_dir, job_runner, image, data_dir, 
     async def can_use(name, inp, ctx):
         if name in ("Write", "Edit", "MultiEdit"):
             fp = inp.get("file_path") or inp.get("path") or ""
+            base = os.path.basename(fp)
+            # /code and /data are the sandbox's view of the host dirs; an agent writing
+            # there is confused about cwd, not tampering — except eval.py, which is the
+            # grader and is genuinely off-limits everywhere.
+            if base == "eval.py":
+                _blocked("tamper-grader", fp)
+                return PermissionResultDeny(message="eval.py is the independent grader")
+            if fp.startswith("/code") or fp.startswith("/data") or fp.startswith("/artifacts"):
+                _blocked("sandbox-path", fp)   # benign: redirect to cwd, not a tamper signal
+                return PermissionResultDeny(
+                    message="write to your current directory, not the sandbox path /code")
             target = os.path.abspath(fp if os.path.isabs(fp) else os.path.join(code_dir, fp))
             if target != code_dir and not target.startswith(code_dir + os.sep):
                 _blocked("write-outside-codedir", target)
                 return PermissionResultDeny(message=f"writes confined to {code_dir}")
-            if os.path.basename(target) == "eval.py":          # grader is off-limits
-                _blocked("tamper-grader", target)
-                return PermissionResultDeny(message="eval.py is the independent grader")
             return PermissionResultAllow()
         if name in ("Read", tool_name):
             return PermissionResultAllow()
