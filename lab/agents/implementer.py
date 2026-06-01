@@ -102,9 +102,11 @@ def _author_prompt(task: ImplementationTask) -> str:
 
 
 def sdk_author(job_runner, image_registry, dataset_cache, *, model: str = "claude-sonnet-4-6",
-               max_turns: int = 30) -> AuthorFn:
+               max_turns: int = 30, audit: list | None = None) -> AuthorFn:
     """Real authoring agent: a Claude session that writes + debugs code, executing ONLY in
-    the container sandbox. Writes are confined to the code dir; raw Bash is disallowed."""
+    the container sandbox. Writes are confined to the code dir; raw Bash is disallowed.
+    If `audit` is given, blocked attempts (tampering with the grader, writing outside the
+    code dir, using a disallowed tool) are appended to it — a tamper-attempt record."""
     def author(task: ImplementationTask, code_dir: Path, rec: ExperimentRecord) -> Usage:
         from ..image_registry import NoImageError
         image = None
@@ -119,15 +121,17 @@ def sdk_author(job_runner, image_registry, dataset_cache, *, model: str = "claud
             if not ref.held_out:
                 data_dir = entry.path
         return asyncio.run(_run_authoring_session(
-            _author_prompt(task), code_dir, job_runner, image, data_dir, model, max_turns))
+            _author_prompt(task), code_dir, job_runner, image, data_dir, model, max_turns,
+            audit=audit))
     return author
 
 
 async def _run_authoring_session(prompt, code_dir, job_runner, image, data_dir, model,
-                                 max_turns) -> Usage:
+                                 max_turns, audit: list | None = None) -> Usage:
     """Reusable sandboxed authoring session (Implementer and recipe-authoring share it):
     a Claude session writes/debugs code, executing only via the container sandbox tool,
-    with writes confined to code_dir and eval.py off-limits."""
+    with writes confined to code_dir and eval.py off-limits. Blocked attempts are recorded
+    in `audit` when provided."""
     from claude_agent_sdk import (
         ClaudeAgentOptions, PermissionResultAllow, PermissionResultDeny, ResultMessage, query,
     )
@@ -138,17 +142,24 @@ async def _run_authoring_session(prompt, code_dir, job_runner, image, data_dir, 
         job_runner, code_dir=code_dir, image=image, scratch_dir=Path(code_dir) / "_scratch",
         data_dir=data_dir)
 
+    def _blocked(kind, detail):
+        if audit is not None:
+            audit.append({"kind": kind, "detail": detail})
+
     async def can_use(name, inp, ctx):
         if name in ("Write", "Edit", "MultiEdit"):
             fp = inp.get("file_path") or inp.get("path") or ""
             target = os.path.abspath(fp if os.path.isabs(fp) else os.path.join(code_dir, fp))
             if target != code_dir and not target.startswith(code_dir + os.sep):
+                _blocked("write-outside-codedir", target)
                 return PermissionResultDeny(message=f"writes confined to {code_dir}")
             if os.path.basename(target) == "eval.py":          # grader is off-limits
+                _blocked("tamper-grader", target)
                 return PermissionResultDeny(message="eval.py is the independent grader")
             return PermissionResultAllow()
         if name in ("Read", tool_name):
             return PermissionResultAllow()
+        _blocked("disallowed-tool", name)
         return PermissionResultDeny(message=f"tool {name} not permitted")
 
     options = ClaudeAgentOptions(
