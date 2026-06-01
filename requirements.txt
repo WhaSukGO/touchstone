@@ -1,2 +1,5 @@
 pyyaml>=6.0
 pytest>=8.0
+# Agent SDK wiring (lab/agents/). Requires the `claude` CLI on PATH. Only needed to run
+# real Claude sessions live; the offline tests inject a fake and don't import it.
+claude-agent-sdk>=0.2

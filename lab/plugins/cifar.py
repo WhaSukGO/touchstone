@@ -93,3 +93,19 @@ class CifarPlanner:
 def seed_experiment(hypothesis: str, *, exp_id: str, priority: int = 0) -> ExperimentRecord:
     return ExperimentRecord(id=exp_id, hypothesis=hypothesis,
                             status=Status.PROPOSED, priority=priority)
+
+
+def cifar_contract(poison: bool) -> ExperimentContract:
+    """Public access to the fixed calibration contract."""
+    return _contract(poison)
+
+
+def calibration_records() -> tuple[ExperimentRecord, ExperimentRecord]:
+    """Pre-contracted positive/negative calibration records. Because the contract is
+    pre-set, the planner is skipped — calibration always uses the fixed reference
+    scripts, even when an LLM planner is wired for research experiments."""
+    pos = ExperimentRecord(id="cal-pos", hypothesis="cifar positive control",
+                           status=Status.PROPOSED, contract=_contract(False), priority=100)
+    neg = ExperimentRecord(id="cal-neg", hypothesis="cifar negative control",
+                           status=Status.PROPOSED, contract=_contract(True), priority=100)
+    return pos, neg

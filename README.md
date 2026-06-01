@@ -80,13 +80,23 @@ provenance (config hash, image, dataset hashes, seed) so future labs can trust i
 This also validated `docker` job mode end-to-end (GPU passthrough, read-only cache mounts,
 `/code` reference-code mount, held-out isolation).
 
+**Agent SDK wired** (`lab/agents/`, on `claude-agent-sdk`):
+- `SdkPlanner` proposes `ExperimentContract`s via structured output (real Claude session).
+- `SdkEvaluator` is independent + skeptical: it composes the deterministic `ScriptEvaluator`
+  (held-out measurement) then opens a **separate** session for judgment. Guarantees a
+  measurement that fails the oracle can never be talked up to PASS; the LLM may only
+  confirm or **downgrade** a passed measurement to FAIL (e.g. suspected leakage).
+- `query()` is independent by default (no shared context); `setting_sources=[]` keeps
+  sessions clean; token usage read from `ResultMessage` (budget stays token-based).
+- The SDK call is injectable (`run_fn`), so all glue is covered by offline tests (no API,
+  no GPU). Live check: `python -m lab.agents.smoke` (billed). Factory:
+  `build_cifar_agent_harness`.
+
 **Still to do**
-- **Agent SDK wiring**: replace `ScriptedPlanner` / `DeterministicEvaluator` with real
-  Claude sessions for *non-calibration* experiments. The evaluator **must** run in a
-  separate process/context from the generator. Nothing else in the harness changes —
-  that is the point of the Protocols.
+- Live verification of the SDK agents on real compute (needs GPU + `ANTHROPIC_API_KEY`).
 - Scale calibration up (CIFAR → ImageNet / a real research domain + oracle).
-- `decide_next`-driven autonomous experiment lineage (Stage 4).
+- Stage 3: expert team + contract negotiation; constrain planner proposals to a vetted menu.
+- Stage 4: `decide_next`-driven autonomous experiment lineage.
 
 ## Layout
 

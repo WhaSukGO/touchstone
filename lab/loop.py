@@ -72,6 +72,8 @@ class Harness:
                 rec.tokens_out += usage.tokens_out
                 self.budget.charge_tokens(rec.id, usage.tokens_in, usage.tokens_out)
             contract = rec.contract
+            if not rec.config_hash:  # pre-supplied contracts (e.g. calibration) still get a hash
+                rec.config_hash = stable_hash(to_jsonable(contract))
             self._commit(rec, Status.CONTRACTED, "contract negotiated")
 
             # CONTRACTED -> ENV_READY  (image resolution; no tokens)

@@ -76,3 +76,24 @@ def build_cifar_harness(root: str | Path, *, job_mode: str = "docker",
         metric_extractor=CifarMetricExtractor(), job_mode=job_mode,
         lease_timeout_s=lease_timeout_s,
     )
+
+
+def build_cifar_agent_harness(root: str | Path, *, job_mode: str = "docker",
+                              images_path: str | Path = "images/registry.yaml",
+                              model: str | None = None,
+                              max_total_tokens: int = 2_000_000,
+                              max_experiments: int = 100,
+                              lease_timeout_s: float = 1800.0) -> Harness:
+    """CIFAR domain wired with the REAL Agent SDK: SdkPlanner proposes research
+    experiments and the skeptical SdkEvaluator (separate context) judges on top of the
+    deterministic held-out measurement. Calibration records carry a fixed contract, so
+    the gate still uses the reference scripts. Live use needs ANTHROPIC_API_KEY (billed)."""
+    from .agents import DEFAULT_MODEL, SdkEvaluator, SdkPlanner
+
+    h = build_cifar_harness(root, job_mode=job_mode, images_path=images_path,
+                            max_total_tokens=max_total_tokens,
+                            max_experiments=max_experiments, lease_timeout_s=lease_timeout_s)
+    m = model or DEFAULT_MODEL
+    h.planner = SdkPlanner(model=m)
+    h.evaluator = SdkEvaluator(h.evaluator, model=m)  # wrap the deterministic ScriptEvaluator
+    return h
