@@ -1,11 +1,12 @@
 # Touchstone
 
-*An autonomous computer-vision research lab that trusts no claim it didn't independently measure.*
+*A research lab where AI agents can't cheat their evaluations — every result is independently verified on data the producer never saw.*
 
-**A harness-engineered, self-directing computer-vision research lab where a committee of
-Claude agents proposes, implements, and runs experiments on GPU — and an independent,
-skeptical evaluator verifies every result on held-out data against a fixed oracle, so
-nothing counts as "done" until something independent confirms it actually works.**
+**A harness-engineered, self-directing research lab where a committee of Claude agents
+proposes, implements, and runs experiments — from ML training to coding tasks — and an
+independent, skeptical evaluator verifies every result on held-out data against a fixed
+bar, so nothing counts as "done" until something independent confirms it. The same spine
+makes it structurally impossible for an agent to cheat its own evaluation.**
 
 **See it in 10 seconds** (no GPU, no API key): `python -m lab.run_cheat_demo` — watch it
 catch an agent cheating its own tests. (Or `python -m lab.demo` for the full tour;
@@ -139,7 +140,8 @@ task.
   parameter space of vetted recipes, or implementing a *specified* task — not inventing.
 - The lab can now **author its own recipes** and admit them via a calibration gate
   (Stage 6), but wiring a genuinely new *domain* (its dataset provider + CUDA image) is
-  still human setup. One CV recipe (CIFAR-10) and one implementer task ship today.
+  still human setup. An image-classification recipe (CIFAR-10) plus coding tasks (k-NN,
+  HumanEval+) ship today.
 - **Single local GPU, sequential**; labs run **in one process** (collaboration isn't
   networked).
 - Verification needs a **known oracle**, so it's strongest for reproduction-style work.
