@@ -1,6 +1,6 @@
 # Touchstone — see it in 10 seconds
 
-**AI agents cheat their own evaluations. Touchstone makes that impossible.**
+**AI agents game their evaluations. Touchstone closes the common ways.**
 
 The #1 fear about AI agents in 2025–26 is that they game their tests — hardcoding answers,
 special-casing the visible cases, editing the grader. Touchstone catches it.
@@ -91,9 +91,10 @@ The same three beats, on real compute (verified on an RTX 3080):
 
 ## Why this matters
 
-- **The #1 problem with AI agents is they're confidently wrong.** Touchstone makes that impossible to hide: every result is re-measured by an *independent* agent on data the producer never saw.
+- **The #1 problem with AI agents is they're confidently wrong.** Touchstone makes it harder to hide: every result is re-measured on a held-out split the producer never saw, with a grader it can't edit.
 - **"It ran" is not success.** A result is accepted only if it clears a fixed target on a held-out split — the way ML *should* be evaluated, enforced automatically.
-- **Even the checker is checked.** A second lab can independently reproduce any result before you trust it (and catches tampering or a broken evaluator).
+- **Even the checker is checked.** A second lab can independently reproduce a result before you trust it (and catches tampering or a broken evaluator).
+- **Honest about limits.** The building blocks (hidden tests, sandboxing, held-out grading) are standard practice — this is a clean, tamper-resistant *harness* around them, not a silver bullet. See the README's prior-art and limits.
 
 It's not just a verifier — it's a self-directing research lab (agents propose, implement code, and run experiments on GPU) with that verification spine wired through every step.
 

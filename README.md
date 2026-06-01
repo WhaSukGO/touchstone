@@ -1,16 +1,17 @@
 # Touchstone
 
-*A research lab where AI agents can't cheat their evaluations — every result is independently verified on data the producer never saw.*
+*A verification-first agent harness: results are measured on held-out data the producer never saw, in a sandbox, with a grader it can't edit.*
 
-**A harness-engineered, self-directing research lab where a committee of Claude agents
-proposes, implements, and runs experiments — from ML training to coding tasks — and an
-independent, skeptical evaluator verifies every result on held-out data against a fixed
-bar, so nothing counts as "done" until something independent confirms it. The same spine
-makes it structurally impossible for an agent to cheat its own evaluation.**
+**A self-directing harness where a committee of Claude agents proposes, implements, and
+runs experiments — from ML training to coding tasks — and the result is measured on a
+held-out split against a fixed bar before it counts as "done." The same spine closes the
+common ways an agent games an eval: hidden held-out, sandboxed execution, and a grader the
+solver can't see or edit. (Not a silver bullet — see [limits](#what-it-does-not-do) and
+[prior art](#prior-art--whats-new).)**
 
-**See it in 10 seconds** (no GPU, no API key): `python -m lab.run_cheat_demo` — watch it
-catch an agent cheating its own tests. (Or `python -m lab.demo` for the full tour;
-[DEMO.md](DEMO.md).)
+**See it in 10 seconds** (no GPU, no API key): `python -m lab.run_cheat_demo` — watch the
+common reward hacks fail against a hidden, untouchable grader. (Or `python -m lab.demo` for
+the full tour; [DEMO.md](DEMO.md).)
 
 ![Touchstone catches an agent cheating its tests](assets/cheat.gif)
 
@@ -67,9 +68,9 @@ This started from a failed agent loop. The fixes are the architecture:
 
 | Capability | Try it | Proven result |
 |---|---|---|
-| **Catches reward hacking** — agents can't cheat a hidden, untouchable grader | `python -m lab.run_cheat_demo` | hardcode/special-case cheats score 100% on visible tests → **REJECTED** on hidden |
-| **The RLVR "verifier problem"** — reward hacks that fool a naive reward, incl. **overwriting the grader** | `python -m lab.run_reward_hacking_demo` | memorize / special-case / grader-tamper all earn 100% naive reward → all **REJECTED** (grader restored before judging) |
-| **Cheat-proof autograder** — grade a coding agent on hidden tests it can't game | `python -m lab.run_autograde` | submitter "claimed 3/3"; verified **1/3** on hidden; tamper attempts blocked |
+| **Resists common reward hacks** — hidden, untouchable grader | `python -m lab.run_cheat_demo` | hardcode/special-case cheats score 100% on visible tests → **REJECTED** on hidden |
+| **Reward hacks vs a naive verifier** — incl. **overwriting the grader** | `python -m lab.run_reward_hacking_demo` | memorize / special-case / grader-tamper all earn 100% naive reward → all **REJECTED** (grader restored before judging) |
+| **Hardened autograder** — grade a coding agent on hidden tests it can't see or edit | `python -m lab.run_autograde` | submitter "claimed 3/3"; verified **1/3** on hidden; tamper attempts blocked |
 | **…on a real benchmark** — the same, on **HumanEval+** (EvalPlus) hidden tests | `python -m lab.run_humaneval --live` | live Claude agent: **5/5** on the hidden expanded (plus) tests, 0 tamper attempts; graded vs a hidden reference it never saw |
 | Independent verification + **calibration gate** | `python -m lab.run_cifar_calibration` | trained model VERIFIED; a run lying `0.99` (real `0.088`) REJECTED |
 | **Expert committee** proposes a menu-constrained experiment | `python -m lab.run_cifar_committee` | chose epochs/lr; evaluator passed it but flagged a reported-vs-held-out inflation |
@@ -78,10 +79,10 @@ This started from a failed agent loop. The fixes are the architecture:
 | **Implementer** — a sandboxed agent writes code, then it's independently graded | `python -m lab.run_implementer_demo` | agent wrote NumPy k-NN; held-out acc **0.9933** → VERIFIED |
 | **Recipe-authoring** — the lab grows its own menu, gated by admission | `python -m lab.run_recipe_author_demo` | agent authored a parameterized k-NN recipe; admitted (default VERIFIED, corrupted artifact REJECTED) |
 
-The standout for the RLVR crowd — reward hacks that earn a perfect *naive* reward (the kind
-RL training optimizes), all caught, including **overwriting the grader itself**:
+Common reward hacks earn a perfect score from a *naive* verifier — all caught here
+(memorize, special-case, even **overwriting the grader**):
 
-![Touchstone defeats reward hacking, including grader-tampering](assets/reward_hacking.gif)
+![Reward hacks vs a naive verifier vs a held-out, untouchable grader](assets/reward_hacking.gif)
 
 ## Quick start
 
@@ -140,7 +141,23 @@ metric + oracle + CUDA image. Add one and the whole machinery (committee, autono
 verification, peer review) applies. Today there's a CIFAR-10 recipe and a k-NN implementer
 task.
 
-## What it does *not* do (honest limits)
+## Prior art & what's new
+
+The building blocks are standard practice, not inventions: hidden test suites
+([EvalPlus](https://github.com/evalplus/evalplus), [LiveCodeBench](https://livecodebench.github.io/)),
+sandboxed execution against a project's real tests
+([SWE-bench](https://www.swebench.com/)), and sandboxed scorers / agent evals
+([Inspect](https://inspect.aisi.org.uk/), Braintrust). Most eval frameworks, though, **trust
+the metric you write or the agent's self-report**.
+
+What Touchstone adds is the **integrated, tamper-resistant *harness***: a generator that
+authors code, a grader the solver can't see or edit (re-instantiated right before judging),
+a held-out split, and a calibration gate — wired together so "it ran" never counts as
+success. It's a clean reference implementation of verification-first harness engineering and
+an honest demonstration of *where naive verifiers fail* — **not** a novel research result or
+a hardened platform.
+
+## What it does *not* do
 
 - It does **not invent novel methods or chase SOTA**. Autonomy means exploring the
   parameter space of vetted recipes, or implementing a *specified* task — not inventing.
@@ -151,6 +168,14 @@ task.
 - **Single local GPU, sequential**; labs run **in one process** (collaboration isn't
   networked).
 - Verification needs a **known oracle**, so it's strongest for reproduction-style work.
+- It catches **known reward hacks**, not all of them. The held-out is same-distribution, so
+  a solver that overfits the *task family* (rather than the visible cases) can still pass.
+- The real guarantee is the **deterministic held-out measurement + oracle**, not the LLM
+  evaluator. That evaluator is another session of the same model family — separate context
+  reduces self-praise bias but not *correlated* blind spots. Treat it as a second opinion,
+  not an oracle.
+- "Sandboxed" means a **Docker container** (host user, read-only mounts), not a hardened
+  microVM; `--network none` is currently applied to the code-authoring step, not every run.
 
 ## Layout
 
