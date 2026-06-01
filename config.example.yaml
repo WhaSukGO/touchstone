@@ -1,0 +1,14 @@
+# Example harness config (Stage 1). Copy to config.yaml and adjust.
+root: "./run"                 # lab root (state/, cache/, logs/, workspaces/ live here)
+job_mode: "local"             # "local" for CI/self-test, "docker" for real GPU experiments
+images_path: "images/registry.yaml"
+lease_timeout_s: 3600         # max wait for the single GPU before a job errors
+
+budget:
+  max_total_tokens: 2000000   # reasoning budget — tokens only, NOT turns
+  max_experiments: 100        # hard cap on experiments per run
+
+# Stage 2 (not yet wired): Agent SDK planner/evaluator config
+# agents:
+#   model: "claude-opus-4-8"
+#   evaluator_isolation: "separate_process"   # evaluator must not share generator context

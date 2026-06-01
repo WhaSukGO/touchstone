@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+# runtime state — never commit (design §9)
+cache/
+state/
+logs/
+workspaces/
+_selftest_run/
