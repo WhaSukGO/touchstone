@@ -157,6 +157,27 @@ flagging the reported/held-out gap as inflation.
   must pass review + calibration before entering the menu) — the bridge between full
   autonomy and the menu guardrail.
 
+## Stage 7 status — the Implementer (code-authoring)
+
+**Done** (`lab/agents/implementer.py`, `lab/agents/sandbox_tool.py`; branch
+`stage7-implementer`). The missing "write code" half, added on top of the verification
+spine:
+- The **Implementer** plugs into the Planner seam but *authors code* instead of selecting
+  a recipe. A Claude session writes + debugs the implementation, executing **only** via a
+  **container-only sandbox tool** (`--network none`, `--user`, code/data mounted read-only)
+  — there is no host shell (`Bash` disallowed). Writes are confined to the code dir and the
+  evaluator (`eval.py`) is off-limits, so the agent can't grade or game its own work.
+- The **unchanged independent evaluator** grades the authored code on a held-out split the
+  agent never sees, against the task's fixed oracle. Nothing is accepted otherwise.
+- Offline-proven: good code → VERIFIED, bad-but-runs → REJECTED, broken → FAILED safe.
+- **Live on GPU**: a sandboxed agent implemented a vectorized NumPy k-NN classifier,
+  iterated in the sandbox, and the independent evaluator measured held-out acc=0.9933
+  (≥0.80) → VERIFIED (`python -m lab.run_implementer_demo`).
+
+This is the C-compiler-style autonomous-code loop your project was inspired by — now with
+the near-perfect verifier it requires, so agent-written code is only ever accepted when
+something independent confirms it works.
+
 ## Layout
 
 ```
