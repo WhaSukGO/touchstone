@@ -110,7 +110,10 @@ class JobRunner:
     def _docker_argv(self, spec: JobSpec) -> list[str]:
         if not spec.image:
             raise ValueError("docker mode requires a resolved image")
-        argv = ["docker", "run", "--rm", "--gpus", "all"]
+        # Run as the host user so artifacts are host-owned (not root). HOME=/tmp keeps any
+        # framework cache writes off a non-writable home.
+        argv = ["docker", "run", "--rm", "--gpus", "all",
+                "--user", f"{os.getuid()}:{os.getgid()}"]
         mounts = {
             "/workspace": spec.workdir,
             "/artifacts": spec.artifacts_dir,
@@ -118,6 +121,7 @@ class JobRunner:
         envs = {
             "LAB_ARTIFACTS": "/artifacts",
             "LAB_LOGS": "/logs",
+            "HOME": "/tmp",
         }
         if spec.data_dir:
             mounts["/data:ro"] = spec.data_dir

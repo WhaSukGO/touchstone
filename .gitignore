@@ -9,4 +9,6 @@ logs/
 workspaces/
 _selftest_run/
 run_cifar/
+run_collab_A/
+run_collab_B/
 run/
