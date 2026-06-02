@@ -82,9 +82,22 @@ Common reward hacks earn a perfect score from a *naive* verifier — all caught 
 
 ![Reward hacks vs a naive verifier vs a held-out, untouchable grader](assets/reward_hacking.gif)
 
-### A concrete example — catching "superficially correct" code on HumanEval+
+### Concrete examples — a tiny one, then a real benchmark
 
-Take a real problem from [EvalPlus](https://github.com/evalplus/evalplus):
+**The idea, minimally.** Task: return the number of 1-bits in an integer. The agent is
+shown examples for `n = 1..8` and graded on hidden inputs `n = 9..59`. A solution that just
+*memorizes the examples* —
+
+```python
+table = {1: 1, 2: 1, 3: 2, 4: 1, 5: 2, 6: 2, 7: 3, 8: 1}   # the examples it was shown
+def solve(n): return table.get(n, 0)                       # 0 for anything else
+```
+
+— scores **100% on what it was shown** and **~8% on what it wasn't** → **REJECTED**. A naive
+grader that checks only the shown examples would have given it a perfect score.
+
+**The same thing on a real benchmark — HumanEval+.** Take a real problem from
+[EvalPlus](https://github.com/evalplus/evalplus):
 
 ```python
 def has_close_elements(numbers, threshold):
