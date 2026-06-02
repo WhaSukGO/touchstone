@@ -2,12 +2,13 @@
 
 *A verification-first agent harness: results are measured on held-out data the producer never saw, in a sandbox, with a grader it can't edit.*
 
-**A self-directing harness where a committee of Claude agents proposes, implements, and
-runs experiments — from ML training to coding tasks — and the result is measured on a
-held-out split against a fixed bar before it counts as "done." The same spine closes the
-common ways an agent games an eval: hidden held-out, sandboxed execution, and a grader the
-solver can't see or edit. (Not a silver bullet — see [limits](#what-it-does-not-do) and
-[prior art](#prior-art--whats-new).)**
+**Touchstone is the verifier.** You plug in a **solver** — a single agent that writes code,
+a committee of agents, a submitted solution, or (for ML) a recipe that trains a model — and
+its result is measured on a **held-out** split the producer never saw, against a fixed bar,
+before it counts as "done." The verifier is the constant; the solver is swappable. The same
+spine closes the common ways an agent games an eval: hidden held-out, sandboxed execution,
+and a grader the solver can't see or edit. (Not a silver bullet — see
+[limits](#what-it-does-not-do) and [prior art](#prior-art--whats-new).)
 
 **See it in 10 seconds** (no GPU, no API key): `python -m lab.run_cheat_demo` — watch the
 common reward hacks fail against a hidden, untouchable grader. (Or `python -m lab.demo` for
@@ -23,27 +24,30 @@ and [building a C compiler](https://www.anthropic.com/engineering/building-c-com
 
 ## The idea in one picture
 
+Two layers: a **pluggable solver** produces a solution, and a **fixed verifier** decides
+whether to trust it. The verifier is the point; the solver is swappable.
+
 ```
- a research direction
-        │
-        ▼
- ┌──────────────┐   propose      ┌──────────────┐   run on GPU    ┌──────────────┐
- │  COMMITTEE   │──────────────▶ │   HARNESS    │───────────────▶ │  experiment  │
- │ PI · Modeling│  (or WRITE     │ (deterministic│  (container,    │  artifacts   │
- │ · Data       │   the code)    │  no LLM)     │   cached data)  │              │
- └──────────────┘                └──────────────┘                 └──────┬───────┘
-        ▲                                                                 │
-        │ decide next (memory of past runs)                              ▼
-        │                                              ┌────────────────────────────┐
-        └───────────────── VERIFIED only ─────────────│  INDEPENDENT EVALUATOR      │
-                                                       │  separate context; measures │
-                                                       │  on HELD-OUT vs the oracle; │
-                                                       │  distrusts reported numbers │
-                                                       └────────────────────────────┘
+  SOLVER  (pluggable — how the solution is produced)
+  ┌────────────────────────────────────────────────┐
+  │ • a single coding agent  (writes code)          │
+  │ • a committee of agents  (PI · Modeling · Data)  │ ──┐ produces
+  │ • a submitted solution / external agent          │   │ a solution
+  │ • (for ML) a recipe that trains a model          │   │
+  └────────────────────────────────────────────────┘   │
+                                                         ▼
+  VERIFIER  (the core — always the same)
+  ┌────────────────────────────────────────────────────────────────┐
+  │ run it in a SANDBOX (no host shell), then an INDEPENDENT         │
+  │ evaluator (separate session) measures it on a HELD-OUT split the │
+  │ solver never saw, with a GRADER the solver can't edit            │
+  │                         →  VERIFIED / REJECTED                   │
+  └────────────────────────────────────────────────────────────────┘
 ```
 
-The agent that does the work and the agent that judges it are **different, isolated
-sessions**. A second lab can **peer-review** any result by independently re-measuring it.
+Whatever produces the solution — one agent, a committee, or a submitted file — it is graded
+the same way: it never sees the held-out and can't touch the grader. (A second lab can also
+**peer-review** any result by independently re-measuring it.)
 
 ## Why it works this way (the failures it prevents)
 
@@ -124,8 +128,10 @@ A live Claude agent solved the first 5 problems: **5/5 on the hidden plus tests,
 attempts.** The same machinery grades any coding agent this way — HumanEval+ is just a
 recognizable instance.
 
-**Also — the same spine on real GPU model training** (it verifies *trained models*, not
-just code; CIFAR-10 is the stand-in domain, and these are the broader research-lab pieces):
+**A different solver — a committee that proposes & trains ML models** (same verifier, but
+the solver is now a multi-agent committee running real GPU experiments instead of one coding
+agent; CIFAR-10 is the stand-in domain. This is where `committee` / `PI·Modeling·Data` live —
+*not* in the coding-eval flow above):
 
 | Capability | Try it | Proven result |
 |---|---|---|
